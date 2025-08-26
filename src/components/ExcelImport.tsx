@@ -18,7 +18,8 @@ export const ExcelImport = ({ onMeetingsImported, currentMeetings }: ExcelImport
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [fileUrl, setFileUrl] = useState("");
+  
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -42,6 +43,30 @@ export const ExcelImport = ({ onMeetingsImported, currentMeetings }: ExcelImport
     }
   };
 
+  const handleUrlImport = async () => {
+    if (!fileUrl) return;
+
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch(fileUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const file = new File([blob], "meetings.xlsx");
+      const meetings = await parseExcelFile(file);
+      onMeetingsImported(meetings);
+      setSuccess(`Successfully imported ${meetings.length} meetings from URL.`);
+    } catch (err) {
+      setError(`Failed to import from URL: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const handleExport = () => {
     try {
       exportToExcel(currentMeetings, `meetings-export-${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -118,6 +143,33 @@ export const ExcelImport = ({ onMeetingsImported, currentMeetings }: ExcelImport
           </p>
         </div>
 
+        {/* URL Import Section */}
+        <div className="space-y-3">
+          <Label htmlFor="excel-url">Import Meetings from URL</Label>
+          <div className="flex gap-2">
+            <Input
+              id="excel-url"
+              type="url"
+              placeholder="https://example.com/meetings.xlsx"
+              value={fileUrl}
+              onChange={(e) => setFileUrl(e.target.value)}
+              disabled={isLoading}
+              className="flex-1"
+            />
+            <Button
+              variant="outline"
+              onClick={handleUrlImport}
+              disabled={isLoading || !fileUrl}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {isLoading ? 'Processing...' : 'Import'}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Provide a direct link to an Excel file.
+          </p>
+        </div>
+        
         {/* Template and Export Section */}
         <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-border">
           <Button
@@ -160,4 +212,5 @@ export const ExcelImport = ({ onMeetingsImported, currentMeetings }: ExcelImport
       </CardContent>
     </Card>
   );
+
 };
