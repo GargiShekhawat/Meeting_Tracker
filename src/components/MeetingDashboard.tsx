@@ -27,8 +27,11 @@ export const MeetingDashboard = () => {
   }, []);
 
   const filteredMeetings = meetings.filter(meeting => {
-    const matchesSearch = meeting.stakeholder.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         meeting.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const search = searchTerm.toLowerCase();
+    const matchesSearch =
+      meeting.stakeholder.toLowerCase().includes(search) ||
+      meeting.title.toLowerCase().includes(search) ||
+      meeting.attendees.some(attendee => attendee.toLowerCase().includes(search));
     const matchesStatus = statusFilter === "all" || meeting.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -235,4 +238,5 @@ export const MeetingDashboard = () => {
       </div>
     </div>
   );
+
 };
